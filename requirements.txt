@@ -1,0 +1,5 @@
+langgraph-cli[inmem]
+langgraph
+langchain
+langsmith
+langchain-google-genai
