@@ -17,8 +17,10 @@ from langchain_core.messages import AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
 
-from src.tools import tools
+from src.tools import tools as local_tools
+from src.mcp_client import get_mcp_tools
 from src.prompt import SYSTEM_PROMPT
+
 
 # ============================================================
 # LOGGER
@@ -27,12 +29,43 @@ from src.prompt import SYSTEM_PROMPT
 logger = logging.getLogger(__name__)
 
 
+# ============================================================
+# LOAD MCP TOOLS
+# ============================================================
+
+mcp_tools = []
+all_tools = []
+
+
+async def initialize_tools():
+    """
+    Initialize MCP + Local tools once.
+    """
+
+    global mcp_tools
+    global all_tools
+
+    if not all_tools:
+
+        logger.info("Loading MCP tools...")
+
+        mcp_tools = await get_mcp_tools()
+
+        all_tools = [
+            *local_tools,
+            *mcp_tools,
+        ]
+
+        logger.info(f"Loaded {len(all_tools)} tools")
+
 
 # ============================================================
 # AGENT NODE
 # ============================================================
 
 async def agent_node(state: MessagesState):
+
+    await initialize_tools()
 
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
@@ -41,7 +74,7 @@ async def agent_node(state: MessagesState):
 
     agent = create_agent(
         model=model,
-        tools=tools,
+        tools=all_tools,
         system_prompt=SYSTEM_PROMPT,
     )
 
@@ -52,7 +85,7 @@ async def agent_node(state: MessagesState):
     )
 
     return {
-        "messages": result["messages"][-1]
+        "messages": result["messages"]
     }
 
 
@@ -60,18 +93,13 @@ async def agent_node(state: MessagesState):
 # TOOL NODE
 # ============================================================
 
-tool_node = ToolNode(tools)
+async def tool_node(state: MessagesState):
 
+    await initialize_tools()
 
-# ============================================================
-# MCP NODE
-# ============================================================
+    tool_executor = ToolNode(all_tools)
 
-async def mcp_node(state: MessagesState):
-
-    print("MCP NODE EXECUTED")
-
-    return state
+    return await tool_executor.ainvoke(state)
 
 
 # ============================================================
@@ -92,13 +120,9 @@ def decision_node(state: MessagesState):
 
     if isinstance(last_message, AIMessage):
 
-        # Tool routing
+        # Route to tools if tool calls exist
         if getattr(last_message, "tool_calls", None):
             return "Tool Node"
-
-        # MCP routing
-        if "USE_MCP" in str(last_message.content):
-            return "MCP Node"
 
     return END
 
@@ -124,48 +148,36 @@ state_graph.add_node(
     tool_node,
 )
 
-state_graph.add_node(
-    "MCP Node",
-    mcp_node,
-)
-
 
 # ============================================================
 # EDGES
 # ============================================================
 
-# Start → Agent
+# START → AGENT
 state_graph.add_edge(
     START,
     "Agent Node",
 )
 
-# Agent → Decision Routing
+# AGENT → TOOL / END
 state_graph.add_conditional_edges(
     "Agent Node",
     decision_node,
     {
         "Tool Node": "Tool Node",
-        "MCP Node": "MCP Node",
         END: END,
     },
 )
 
-# Tool → Agent
+# TOOL → AGENT
 state_graph.add_edge(
     "Tool Node",
     "Agent Node",
 )
 
-# MCP → Agent
-state_graph.add_edge(
-    "MCP Node",
-    "Agent Node",
-)
-
 
 # ============================================================
-# COMPILE
+# COMPILE GRAPH
 # ============================================================
 
 graph = state_graph.compile(
@@ -180,6 +192,7 @@ graph = state_graph.compile(
 @asynccontextmanager
 async def compile_agent():
 
-    with ls.tracing_context():
+    await initialize_tools()
 
-        yield graph                                                                                  
+    with ls.tracing_context():
+        yield graph
