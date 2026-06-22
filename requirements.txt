@@ -17,3 +17,6 @@ pypdf
 python-docx
 python-multipart
 langchain_chroma
+pydantic>=2.0
+pydantic-settings
+python-dotenv

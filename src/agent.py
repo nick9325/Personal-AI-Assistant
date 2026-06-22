@@ -17,7 +17,7 @@ from langchain_core.messages import AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
 
-from src.tools import tools as local_tools
+# from src.tools import tools as local_tools
 from src.mcp_client import get_mcp_tools
 from src.prompt import SYSTEM_PROMPT
 
@@ -52,7 +52,6 @@ async def initialize_tools():
         mcp_tools = await get_mcp_tools()
 
         all_tools = [
-            *local_tools,
             *mcp_tools,
         ]
 
@@ -85,7 +84,7 @@ async def agent_node(state: MessagesState):
     )
 
     return {
-        "messages": result["messages"]
+        "messages": result["messages"][-1].text
     }
 
 

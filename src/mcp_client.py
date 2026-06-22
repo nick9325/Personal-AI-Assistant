@@ -10,8 +10,13 @@ async def get_mcp_tools():
             #     "transport": "streamable_http",
             # },
 
-            "memory": {
-                "url": "http://127.0.0.1:8000/mcp",
+            # "memory": {
+            #     "url": "http://127.0.0.1:8000/mcp",
+            #     "transport": "streamable_http",
+            # }
+
+            "email": {
+                "url": "http://127.0.0.1:8001/mcp",
                 "transport": "streamable_http",
             }
         }
