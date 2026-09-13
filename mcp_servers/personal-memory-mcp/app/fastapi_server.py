@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import (
     FastAPI,
@@ -9,6 +10,7 @@ from fastapi import (
 )
 
 import logging
+from pathlib import Path
 
 from app.ingest import ingest_document
 from app.settings import UPLOAD_DIR
@@ -92,7 +94,11 @@ async def upload_document(
             exist_ok=True,
         )
 
-        file_path = UPLOAD_DIR / file.filename
+        safe_filename = Path(file.filename).name
+        if safe_filename != file.filename or safe_filename in {"", ".", ".."}:
+            raise HTTPException(status_code=400, detail="Unsafe filename")
+
+        file_path = UPLOAD_DIR / safe_filename
 
         with open(file_path, "wb") as f:
 
@@ -100,27 +106,24 @@ async def upload_document(
 
             f.write(content)
 
-        logger.info(
-            f"File uploaded: {file.filename}"
-        )
+        logger.info("File uploaded: %s", safe_filename)
 
         result = ingest_document(
             str(file_path)
         )
 
         return {
-            "filename": file.filename,
+            "filename": safe_filename,
             **result,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
 
         logger.exception(e)
 
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=500, detail="Document ingestion failed") from e
 
 
 # ============================================================
@@ -133,7 +136,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "app.fastapi_server:app",
-        host="0.0.0.0",
-        port=8002,
+        host=os.getenv("PERSONAL_MEMORY_API_HOST", "127.0.0.1"),
+        port=int(os.getenv("PERSONAL_MEMORY_API_PORT", "8002")),
         reload=True,
     )

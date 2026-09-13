@@ -1,11 +1,14 @@
 import logging
 import os
+from pathlib import Path
 from typing import Literal, cast
 
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-from app.vectorstore import vectorstore
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
+from app.vectorstore import vectorstore
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,8 +30,8 @@ def _get_transport() -> Transport:
 
 
 MCP_TRANSPORT: Transport = _get_transport()
-MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
-MCP_PORT = int(os.getenv("MCP_PORT", "8003"))
+MCP_HOST = os.getenv("PERSONAL_MEMORY_MCP_HOST", os.getenv("MCP_HOST", "127.0.0.1"))
+MCP_PORT = int(os.getenv("PERSONAL_MEMORY_MCP_PORT", "8003"))
 
 mcp = FastMCP(
     "personal-memory",

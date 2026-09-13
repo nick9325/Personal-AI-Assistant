@@ -49,3 +49,4 @@ Thumbs.db
 # LangGraph & Local development state
 .langgraph_api/
 *.pckl
+data/

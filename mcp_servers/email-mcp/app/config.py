@@ -9,6 +9,7 @@ server image/process can be reused across environments.
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, field_validator
@@ -19,7 +20,7 @@ class EmailSettings(BaseSettings):
     """Strongly-typed settings, validated once at process start."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(__file__).resolve().parents[3] / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -50,8 +51,8 @@ class EmailSettings(BaseSettings):
     mcp_transport: Literal["stdio", "sse", "streamable-http"] = Field(
         default="stdio", description="stdio | streamable-http"
     )
-    mcp_host: str = Field(default="0.0.0.0")
-    mcp_port: int = Field(default=8001)
+    mcp_host: str = Field(default="127.0.0.1", validation_alias="EMAIL_MCP_HOST")
+    mcp_port: int = Field(default=8001, validation_alias="EMAIL_MCP_PORT")
 
     @field_validator("smtp_port", "mcp_port")
     @classmethod
