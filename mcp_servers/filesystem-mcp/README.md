@@ -6,6 +6,6 @@ Run with:
 
 ```powershell
 $env:MCP_TRANSPORT = "streamable-http"
-$env:FILESYSTEM_MCP_PORT = "8004"
+$env:FILESYSTEM_MCP_PORT = "8005"
 python -m app.server
 ```

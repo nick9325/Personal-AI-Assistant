@@ -33,11 +33,11 @@ def _is_enabled(value: str | None) -> bool:
 
 def get_mcp_servers() -> tuple[MCPServerConfig, ...]:
     defaults = (
-        ("weather", "http://127.0.0.1:8000/mcp"),
-        ("email", "http://127.0.0.1:8001/mcp"),
+        ("weather", "http://127.0.0.1:8001/mcp"),
+        ("email", "http://127.0.0.1:8002/mcp"),
         ("personal_memory", "http://127.0.0.1:8003/mcp"),
-        ("filesystem", "http://127.0.0.1:8004/mcp"),
-        ("database", "http://127.0.0.1:8005/mcp"),
+        ("filesystem", "http://127.0.0.1:8005/mcp"),
+        ("database", "http://127.0.0.1:8006/mcp"),
     )
     return tuple(
         MCPServerConfig(

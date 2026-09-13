@@ -10,7 +10,7 @@ Run standalone:
     python -m src.server                # uses MCP_TRANSPORT from .env (default stdio)
 
 Run as HTTP (to mirror your Personal Memory MCP server on its own port):
-    MCP_TRANSPORT=streamable-http MCP_PORT=8001 python -m src.server
+    MCP_TRANSPORT=streamable-http EMAIL_MCP_PORT=8002 python -m src.server
 
 Required environment variables (see .env.example):
     EMAIL_ADDRESS

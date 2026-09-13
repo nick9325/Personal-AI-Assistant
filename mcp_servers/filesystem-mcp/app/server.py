@@ -16,7 +16,7 @@ load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 mcp = FastMCP(
     "filesystem-mcp",
     host=os.getenv("FILESYSTEM_MCP_HOST", os.getenv("MCP_HOST", "127.0.0.1")),
-    port=int(os.getenv("FILESYSTEM_MCP_PORT", "8004")),
+    port=int(os.getenv("FILESYSTEM_MCP_PORT", "8005")),
 )
 service = FilesystemService()
 Transport = Literal["stdio", "sse", "streamable-http"]

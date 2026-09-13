@@ -26,7 +26,7 @@ A local agentic assistant built with LangGraph and modular MCP servers. The grap
 
 ## Start MCP servers
 
-Run each server from its directory, using the project environment. The defaults are ports 8000, 8001, 8003, 8004, and 8005 respectively.
+Run each server from its directory, using the project environment. The sequential service ports are weather `8001`, email `8002`, personal-memory MCP `8003`, personal-memory API `8004`, filesystem `8005`, and database `8006`.
 
 ```powershell
 $env:MCP_TRANSPORT = "streamable-http"

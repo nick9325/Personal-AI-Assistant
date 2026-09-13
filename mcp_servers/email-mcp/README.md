@@ -57,11 +57,10 @@ spawns the server as a subprocess):
 python -m src.server
 ```
 
-**streamable-http** (to mirror your existing setup, e.g. FastAPI on 8000 +
-MCP on 8001):
+**streamable-http** (using the sequential service ports):
 
 ```bash
-MCP_TRANSPORT=streamable-http MCP_PORT=8001 python -m src.server
+MCP_TRANSPORT=streamable-http EMAIL_MCP_PORT=8002 python -m src.server
 ```
 
 The server validates SMTP login **at startup** (in the lifespan handler),
@@ -82,11 +81,11 @@ client = MultiServerMCPClient(
     {
         "personal_memory": {
             "transport": "streamable_http",
-            "url": "http://localhost:8001/mcp",
+            "url": "http://localhost:8003/mcp",
         },
         "email": {
             "transport": "streamable_http",
-            "url": "http://localhost:8002/mcp",  # run this server on a different port
+            "url": "http://localhost:8002/mcp",
         },
     }
 )

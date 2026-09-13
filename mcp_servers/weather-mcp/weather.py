@@ -24,7 +24,7 @@ def _get_transport() -> Transport:
 
 MCP_TRANSPORT: Transport = _get_transport()
 MCP_HOST = os.getenv("WEATHER_MCP_HOST", os.getenv("MCP_HOST", "127.0.0.1"))
-MCP_PORT = int(os.getenv("WEATHER_MCP_PORT", "8000"))
+MCP_PORT = int(os.getenv("WEATHER_MCP_PORT", "8001"))
 
 mcp = FastMCP(
     "weather",

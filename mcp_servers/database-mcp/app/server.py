@@ -15,7 +15,7 @@ load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 mcp = FastMCP(
     "database-mcp",
     host=os.getenv("DATABASE_MCP_HOST", os.getenv("MCP_HOST", "127.0.0.1")),
-    port=int(os.getenv("DATABASE_MCP_PORT", "8005")),
+    port=int(os.getenv("DATABASE_MCP_PORT", "8006")),
 )
 service = DatabaseService()
 Transport = Literal["stdio", "sse", "streamable-http"]

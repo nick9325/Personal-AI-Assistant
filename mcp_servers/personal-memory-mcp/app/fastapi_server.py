@@ -137,6 +137,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.fastapi_server:app",
         host=os.getenv("PERSONAL_MEMORY_API_HOST", "127.0.0.1"),
-        port=int(os.getenv("PERSONAL_MEMORY_API_PORT", "8002")),
+        port=int(os.getenv("PERSONAL_MEMORY_API_PORT", "8004")),
         reload=True,
     )

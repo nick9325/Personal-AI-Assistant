@@ -52,7 +52,7 @@ class EmailSettings(BaseSettings):
         default="stdio", description="stdio | streamable-http"
     )
     mcp_host: str = Field(default="127.0.0.1", validation_alias="EMAIL_MCP_HOST")
-    mcp_port: int = Field(default=8001, validation_alias="EMAIL_MCP_PORT")
+    mcp_port: int = Field(default=8002, validation_alias="EMAIL_MCP_PORT")
 
     @field_validator("smtp_port", "mcp_port")
     @classmethod
