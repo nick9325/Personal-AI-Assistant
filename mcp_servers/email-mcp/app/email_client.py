@@ -115,6 +115,12 @@ def _build_message(
 def _attach_file(message: MIMEMultipart, raw_path: str, max_mb: float) -> None:
     path = Path(raw_path).expanduser()
 
+    configured_roots = os.getenv("FILESYSTEM_ALLOWED_ROOTS", str(Path.cwd()))
+    allowed_roots = [Path(value).expanduser().resolve() for value in configured_roots.split(os.pathsep) if value]
+    resolved_path = path.resolve()
+    if not any(resolved_path == root or root in resolved_path.parents for root in allowed_roots):
+        raise EmailValidationError(f"Attachment is outside allowed filesystem roots: {raw_path}")
+
     if not path.exists() or not path.is_file():
         raise EmailValidationError(f"Attachment not found: {raw_path}")
 

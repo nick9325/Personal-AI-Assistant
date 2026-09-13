@@ -1,10 +1,12 @@
 from pathlib import Path
+from collections.abc import Callable
+from typing import Final
 
 from pypdf import PdfReader
 from docx import Document
 
 
-def parse_pdf(file_path: str) -> str:
+def parse_pdf(file_path: str | Path) -> str:
 
     reader = PdfReader(file_path)
 
@@ -19,9 +21,9 @@ def parse_pdf(file_path: str) -> str:
     return "\n".join(text)
 
 
-def parse_docx(file_path: str) -> str:
+def parse_docx(file_path: str | Path) -> str:
 
-    document = Document(file_path)
+    document = Document(str(file_path))
 
     return "\n".join(
         paragraph.text
@@ -29,25 +31,21 @@ def parse_docx(file_path: str) -> str:
     )
 
 
-def parse_txt(file_path: str) -> str:
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+def parse_txt(file_path: str | Path) -> str:
+    return Path(file_path).read_text(encoding="utf-8")
 
 
-def parse_document(file_path: str) -> str:
+PARSERS: Final[dict[str, Callable[[str | Path], str]]] = {
+    ".pdf": parse_pdf,
+    ".docx": parse_docx,
+    ".txt": parse_txt,
+}
 
+
+def parse_document(file_path: str | Path) -> str:
     extension = Path(file_path).suffix.lower()
-
-    if extension == ".pdf":
-        return parse_pdf(file_path)
-
-    if extension == ".docx":
-        return parse_docx(file_path)
-
-    if extension == ".txt":
-        return parse_txt(file_path)
-
-    raise ValueError(
-        f"Unsupported file type: {extension}"
-    )
+    parser = PARSERS.get(extension)
+    if parser is None:
+        supported = ", ".join(sorted(PARSERS))
+        raise ValueError(f"Unsupported file type: {extension or '<none>'}. Supported: {supported}")
+    return parser(file_path)

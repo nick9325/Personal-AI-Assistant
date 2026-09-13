@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -11,17 +13,19 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 
-def ingest_document(file_path: str):
+def ingest_document(file_path: str | Path) -> dict[str, int | str]:
 
     text = parse_document(file_path)
 
     chunks = text_splitter.split_text(text)
+    if not chunks:
+        return {"status": "empty", "chunks_added": 0}
 
     documents = [
         Document(
             page_content=chunk,
             metadata={
-                "source": file_path,
+                "source": str(file_path),
             },
         )
         for chunk in chunks
