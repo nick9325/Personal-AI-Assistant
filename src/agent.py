@@ -1,197 +1,86 @@
+import asyncio
 import logging
-from contextlib import asynccontextmanager
+import os
+from typing import List
 
-import langsmith as ls
-
-from langgraph.graph import (
-    StateGraph,
-    MessagesState,
-    START,
-    END,
-)
-
-from langgraph.prebuilt import ToolNode
-
-from langchain_core.messages import AIMessage
-
+from dotenv import load_dotenv
+from langchain_core.messages import SystemMessage
+from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import create_agent
+from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
 
-# from src.tools import tools as local_tools
 from src.mcp_client import get_mcp_tools
 from src.prompt import SYSTEM_PROMPT
+from src.tools import tools as local_tools
 
-
-# ============================================================
-# LOGGER
-# ============================================================
-
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-# ============================================================
-# LOAD MCP TOOLS
-# ============================================================
-
-mcp_tools = []
-all_tools = []
-
-
-async def initialize_tools():
+def load_tools() -> List[BaseTool]:
     """
-    Initialize MCP + Local tools once.
+    Load local tools and remote MCP tools for graph initialization.
     """
+    tools: List[BaseTool] = list(local_tools)
 
-    global mcp_tools
-    global all_tools
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
 
-    if not all_tools:
+        if loop and loop.is_running():
+            mcp_tools = []
+        else:
+            mcp_tools = asyncio.run(get_mcp_tools())
 
-        logger.info("Loading MCP tools...")
+        tools.extend(mcp_tools)
+        logger.info(f"Loaded {len(tools)} tools ({len(local_tools)} local, {len(mcp_tools)} MCP).")
+    except Exception as e:
+        logger.warning(f"Failed to fetch MCP tools during graph build: {e}. Defaulting to local tools.")
 
-        mcp_tools = await get_mcp_tools()
-
-        all_tools = [
-            *mcp_tools,
-        ]
-
-        logger.info(f"Loaded {len(all_tools)} tools")
+    return tools
 
 
-# ============================================================
-# AGENT NODE
-# ============================================================
+# 1. Load Tools & Initialize LLM Model
+all_tools = load_tools()
 
+api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.4,
+    api_key=api_key if api_key else "DUMMY_KEY_CONFIGURE_IN_ENV",
+)
+
+# Bind tools to model if any exist
+model_with_tools = model.bind_tools(all_tools) if all_tools else model
+
+
+# 2. Define Agent Node Function
 async def agent_node(state: MessagesState):
-
-    await initialize_tools()
-
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0,
-    )
-
-    agent = create_agent(
-        model=model,
-        tools=all_tools,
-        system_prompt=SYSTEM_PROMPT,
-    )
-
-    result = await agent.ainvoke(
-        {
-            "messages": state["messages"]
-        }
-    )
-
-    return {
-        "messages": result["messages"][-1].text
-    }
-
-
-# ============================================================
-# TOOL NODE
-# ============================================================
-
-async def tool_node(state: MessagesState):
-
-    await initialize_tools()
-
-    tool_executor = ToolNode(all_tools)
-
-    return await tool_executor.ainvoke(state)
-
-
-# ============================================================
-# DECISION FUNCTION
-# ============================================================
-
-def decision_node(state: MessagesState):
     """
-    Routing logic after agent execution.
+    Invokes the LLM with the system prompt prepended to message history.
     """
-
     messages = state["messages"]
-
-    if not messages:
-        return END
-
-    last_message = messages[-1]
-
-    if isinstance(last_message, AIMessage):
-
-        # Route to tools if tool calls exist
-        if getattr(last_message, "tool_calls", None):
-            return "Tool Node"
-
-    return END
+    system_message = SystemMessage(content=SYSTEM_PROMPT)
+    response = await model_with_tools.ainvoke([system_message] + list(messages))
+    return {"messages": [response]}
 
 
-# ============================================================
-# CREATE GRAPH
-# ============================================================
+# 3. Build Standard LangGraph Workflow
+workflow = StateGraph(MessagesState)
 
-state_graph = StateGraph(MessagesState)
+# Add Nodes
+workflow.add_node("agent", agent_node)
+workflow.add_node("tools", ToolNode(all_tools))
 
+# Add Edges & Conditional Tool Routing
+workflow.add_edge(START, "agent")
+workflow.add_conditional_edges("agent", tools_condition)
+workflow.add_edge("tools", "agent")
 
-# ============================================================
-# ADD NODES
-# ============================================================
+# 4. Compile Graph (Exported as `graph` for langgraph.json)
+graph = workflow.compile()
 
-state_graph.add_node(
-    "Agent Node",
-    agent_node,
-)
-
-state_graph.add_node(
-    "Tool Node",
-    tool_node,
-)
-
-
-# ============================================================
-# EDGES
-# ============================================================
-
-# START → AGENT
-state_graph.add_edge(
-    START,
-    "Agent Node",
-)
-
-# AGENT → TOOL / END
-state_graph.add_conditional_edges(
-    "Agent Node",
-    decision_node,
-    {
-        "Tool Node": "Tool Node",
-        END: END,
-    },
-)
-
-# TOOL → AGENT
-state_graph.add_edge(
-    "Tool Node",
-    "Agent Node",
-)
-
-
-# ============================================================
-# COMPILE GRAPH
-# ============================================================
-
-graph = state_graph.compile(
-    name="Gemini-Agent"
-)
-
-
-# ============================================================
-# STANDARD TEMPLATE
-# ============================================================
-
-@asynccontextmanager
-async def compile_agent():
-
-    await initialize_tools()
-
-    with ls.tracing_context():
-        yield graph
