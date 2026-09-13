@@ -183,6 +183,6 @@ def send_smtp_email(
 
     return SendResult(
         ok=True,
-        message=f"Email sent to {len(all_recipients)} recipient(s)",
+        message=f"Email sent to: {', '.join(all_recipients)}",
         recipients=all_recipients,
     )

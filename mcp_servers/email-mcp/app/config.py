@@ -9,6 +9,7 @@ server image/process can be reused across environments.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,7 +47,7 @@ class EmailSettings(BaseSettings):
     )
 
     # --- Transport for running this MCP server itself ---
-    mcp_transport: str = Field(
+    mcp_transport: Literal["stdio", "sse", "streamable-http"] = Field(
         default="stdio", description="stdio | streamable-http"
     )
     mcp_host: str = Field(default="0.0.0.0")

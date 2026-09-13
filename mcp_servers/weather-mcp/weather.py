@@ -1,4 +1,5 @@
-from typing import Any
+import os
+from typing import Any, Literal, cast
 
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -8,7 +9,25 @@ from mcp.server.fastmcp import FastMCP
 # INITIALIZE MCP SERVER
 # ============================================================
 
-mcp = FastMCP("weather")
+Transport = Literal["stdio", "sse", "streamable-http"]
+
+
+def _get_transport() -> Transport:
+    transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+    if transport not in {"stdio", "sse", "streamable-http"}:
+        raise ValueError(f"Unsupported MCP_TRANSPORT: {transport}")
+    return cast(Transport, transport)
+
+
+MCP_TRANSPORT: Transport = _get_transport()
+MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
+MCP_PORT = int(os.getenv("MCP_PORT", "8000"))
+
+mcp = FastMCP(
+    "weather",
+    host=MCP_HOST,
+    port=MCP_PORT,
+)
 
 
 # ============================================================
@@ -184,8 +203,7 @@ Weather Code: {daily["weathercode"][i]}
 # ============================================================
 
 def main():
-
-    mcp.run(transport="streamable-http")
+    mcp.run(transport=MCP_TRANSPORT)
 
 
 if __name__ == "__main__":

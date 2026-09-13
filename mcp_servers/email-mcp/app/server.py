@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import logging
 import smtplib
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -80,7 +80,7 @@ def _verify_credentials(settings: EmailSettings) -> None:
 
 
 @asynccontextmanager
-async def lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
+async def lifespan(server: FastMCP) -> AsyncGenerator[AppContext, None]:
     settings = get_settings()
     _verify_credentials(settings)
     try:
@@ -93,9 +93,9 @@ _settings_for_init = get_settings()
 
 mcp = FastMCP(
     "email-mcp",
-    lifespan=lifespan,
     host=_settings_for_init.mcp_host,
     port=_settings_for_init.mcp_port,
+    lifespan=lifespan,
 )
 
 
@@ -278,10 +278,13 @@ def get_config_summary() -> str:
 
 def main() -> None:
     settings = get_settings()
-    if settings.mcp_transport == "streamable-http":
-        mcp.run(transport="streamable-http")
-    else:
-        mcp.run(transport="stdio")
+    logger.info(
+        "Starting email MCP server with %s transport on %s:%s",
+        settings.mcp_transport,
+        settings.mcp_host,
+        settings.mcp_port,
+    )
+    mcp.run(transport=settings.mcp_transport)
 
 
 if __name__ == "__main__":

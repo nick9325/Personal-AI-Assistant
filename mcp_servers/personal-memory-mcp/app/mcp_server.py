@@ -1,4 +1,6 @@
 import logging
+import os
+from typing import Literal, cast
 
 from mcp.server.fastmcp import FastMCP
 
@@ -14,8 +16,24 @@ logger = logging.getLogger(__name__)
 # MCP SERVER
 # ============================================================
 
+Transport = Literal["stdio", "sse", "streamable-http"]
+
+
+def _get_transport() -> Transport:
+    transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+    if transport not in {"stdio", "sse", "streamable-http"}:
+        raise ValueError(f"Unsupported MCP_TRANSPORT: {transport}")
+    return cast(Transport, transport)
+
+
+MCP_TRANSPORT: Transport = _get_transport()
+MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
+MCP_PORT = int(os.getenv("MCP_PORT", "8003"))
+
 mcp = FastMCP(
-    name="personal-memory",
+    "personal-memory",
+    host=MCP_HOST,
+    port=MCP_PORT,
 )
 
 
@@ -60,10 +78,10 @@ async def personal_query(query: str) -> str:
 # MAIN
 # ============================================================
 
+def main() -> None:
+    logger.info("Starting personal-memory MCP server on %s:%s", MCP_HOST, MCP_PORT)
+    mcp.run(transport=MCP_TRANSPORT)
+
+
 if __name__ == "__main__":
-
-    logger.info("Starting MCP Server...")
-
-    mcp.run(
-        transport="streamable-http",
-    )
+    main()
