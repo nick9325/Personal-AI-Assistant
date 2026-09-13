@@ -1,4 +1,5 @@
 langgraph-cli[inmem]
+langgraph-api>=0.11.0
 langgraph
 langchain
 langsmith
@@ -6,9 +7,9 @@ langchain-community
 langchain-text-splitters
 langchain-huggingface
 langchain-google-genai
-mcp[cli] 
+langchain-mcp-adapters>=0.3.2,<0.4.0
+mcp[cli]>=1.30.0,<2.0.0
 httpx
-langchain-mcp-adapters
 fastapi
 uvicorn
 chromadb
