@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_groq import ChatGroq
 
 from src.mcp_client import get_mcp_tools
 from src.config import get_llm_settings
@@ -26,11 +27,10 @@ model = None
 
 def _create_model():
     """Import and construct the provider client outside the ASGI event loop."""
-    from langchain_google_genai import ChatGoogleGenerativeAI
 
-    return ChatGoogleGenerativeAI(
+    return ChatGroq(
         model=llm_model,
-        temperature=0.4,
+        temperature=0.2,
         api_key=api_key if api_key else "DUMMY_KEY_CONFIGURE_IN_ENV",
     )
 

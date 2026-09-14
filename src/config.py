@@ -51,8 +51,8 @@ def get_mcp_servers() -> tuple[MCPServerConfig, ...]:
 
 def get_llm_settings() -> tuple[str | None, str]:
     return (
-        os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"),
-        os.getenv("LLM_MODEL", "gemini-2.5-flash"),
+        os.getenv("GROQ_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"),
+        os.getenv("LLM_MODEL", "openai/gpt-oss-120b"),
     )
 
 
