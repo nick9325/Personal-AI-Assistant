@@ -34,7 +34,9 @@ async def get_mcp_tools(servers: tuple[MCPServerConfig, ...] | None = None) -> l
     for server_name, connection in mcp_servers.items():
         try:
             client = client_class({server_name: connection})
-            server_tools = await client.get_tools(server_name=server_name)
+            server_tools = await asyncio.wait_for(
+                client.get_tools(server_name=server_name), timeout=5.0
+            )
             tools.extend(server_tools)
             logger.info("Loaded %s MCP tools from %s", len(server_tools), server_name)
         except Exception as exc:  # pragma: no cover - servers may be offline
